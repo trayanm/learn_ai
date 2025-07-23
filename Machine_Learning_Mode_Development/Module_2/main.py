@@ -9,7 +9,7 @@ app = FastAPI(title="Income Prediction API")
 # --- load model -----------------------------------------------------------
 USE_ONNX = os.getenv("USE_ONNX", "1") == "1"
 if USE_ONNX:
-    sess = ort.InferenceSession("logreg.onnx", providers=["CPUExecutionProvider"])
+    sess = ort.InferenceSession("LogisticRegression.onnx", providers=["CPUExecutionProvider"])
     ONNX_INPUTS = [i.name for i in sess.get_inputs()]
 else:
     pipe = joblib.load("LogisticRegression.joblib")

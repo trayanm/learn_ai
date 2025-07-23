@@ -34,6 +34,11 @@ python -m venv .venv
 python3 -m venv .venv
 ```
 
+#### Upgrade pip
+```bash
+python.exe -m pip install --upgrade pip
+```
+
 > This creates a new folder named `.venv/` containing an isolated Python environment.
 
 ---

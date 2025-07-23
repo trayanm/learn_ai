@@ -5,7 +5,7 @@ from skl2onnx import convert_sklearn
 from skl2onnx.common.data_types import StringTensorType, FloatTensorType
 
 def load_data():
-    data_path = 'data.csv'
+    data_path = 'adult_data.csv'
     if not os.path.exists(data_path):
         df = pd.read_csv(
             "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data",

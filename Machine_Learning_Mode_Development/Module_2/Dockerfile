@@ -10,7 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application files
 COPY main.py .
-COPY logreg.onnx .
+COPY LogisticRegression.onnx .
 
 # Set environment variable so app knows to use ONNX
 ENV USE_ONNX=1
