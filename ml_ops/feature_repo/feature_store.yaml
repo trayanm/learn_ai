@@ -8,7 +8,7 @@ offline_store:
   type: postgres
   host: localhost
   port: 5432
-  database: feast_db
+  database: ai_feast_db
   db_schema: public
   user: postgres
   password: edno

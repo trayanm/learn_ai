@@ -38,8 +38,8 @@ ml_ops/
 In **pgAdmin** or `psql`:
 
 ```sql
-CREATE DATABASE mlflow_db;
-CREATE DATABASE feast_db;
+CREATE DATABASE ai_mlflow_db;
+CREATE DATABASE ai_feast_db;
 ```
 
 ---
@@ -66,7 +66,7 @@ cd T:\dev\Learn\AI\learn_ai\ml_ops
 mkdir -p mlflow\artifacts
 
 mlflow server `
-    --backend-store-uri postgresql://postgres:edno@localhost:5432/mlflow_db `
+    --backend-store-uri postgresql://postgres:edno@localhost:5432/ai_mlflow_db `
     --default-artifact-root "file:///T:/dev/Learn/AI/learn_ai/ml_ops/mlflow/artifacts" `
     --host 127.0.0.1 `
     --port 5000
@@ -92,7 +92,7 @@ offline_store:
   type: postgres
   host: localhost
   port: 5432
-  database: feast_db
+  database: ai_feast_db
   db_schema: public
   user: postgres
   password: YOURPASSWORD
