@@ -209,3 +209,6 @@ __marimo__/
 
 # custom
 data_excluded/
+
+# mlflow
+mlruns/
