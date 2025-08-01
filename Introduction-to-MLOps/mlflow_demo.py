@@ -9,11 +9,19 @@ import mlflow.sklearn
 from mlflow.tracking import MlflowClient
 from mlflow.models.signature import infer_signature
 
-mlruns_path = os.path.abspath(os.path.expanduser("../mlruns"))
-mlflow.set_tracking_uri("file://" + mlruns_path)  # Set your MLflow tracking URI
+# mlruns_path = os.path.abspath(os.path.expanduser("../mlruns"))
+# mlflow.set_tracking_uri("file://" + mlruns_path)  # Set your MLflow tracking URI
+
+mlflow.set_tracking_uri("../mlruns")  # Set your MLflow tracking URI
 
 EXPERIMENT_NAME = "Iris-Demo"
 client = MlflowClient()
+
+if not client.get_experiment_by_name(EXPERIMENT_NAME):
+    # Create a new experiment if it does not exist
+    client.create_experiment(EXPERIMENT_NAME)
+
+mlflow.set_experiment(EXPERIMENT_NAME)
 
 # load data and train classifier
 iris = load_iris(as_frame=True)
