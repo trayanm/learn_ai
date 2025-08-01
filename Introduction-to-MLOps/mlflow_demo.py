@@ -7,9 +7,10 @@ from sklearn.metrics import accuracy_score
 import mlflow
 import mlflow.sklearn
 from mlflow.tracking import MlflowClient
-from mlflow.model.signatures import infer_signature
+from mlflow.models.signature import infer_signature
 
-mlflow.set_tracking_uri("file://" + os.path.expanduser("mlruns"))  # Set your MLflow tracking URI
+mlruns_path = os.path.abspath(os.path.expanduser("../mlruns"))
+mlflow.set_tracking_uri("file://" + mlruns_path)  # Set your MLflow tracking URI
 
 EXPERIMENT_NAME = "Iris-Demo"
 client = MlflowClient()
