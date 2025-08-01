@@ -67,7 +67,7 @@ mkdir -p mlflow\artifacts
 
 mlflow server `
     --backend-store-uri postgresql://postgres:edno@localhost:5432/mlflow_db `
-    --default-artifact-root "T:\dev\Learn\AI\learn_ai\ml_ops\mlflow\artifacts" `
+    --default-artifact-root "file:///T:/dev/Learn/AI/learn_ai/ml_ops/mlflow/artifacts" `
     --host 127.0.0.1 `
     --port 5000
 ```

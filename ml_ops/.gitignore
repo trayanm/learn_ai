@@ -21,9 +21,9 @@ ENV/
 # MLflow
 # --------------------
 # MLflow artifact storage (can get very large)
-mlflow_artifacts/
+mlflow/artifacts/
 # SQLite DB if not needed in repo
-mlflow_artifacts/*.db
+mlflow/artifacts/*.db
 
 # --------------------
 # Feast
