@@ -212,3 +212,6 @@ data_excluded/
 
 # mlflow
 mlruns/
+
+# feast
+feature_repo/
