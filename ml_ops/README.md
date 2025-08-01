@@ -60,12 +60,14 @@ pip install mlflow "feast[postgres]" scikit-learn pandas sqlalchemy
 ## **4️⃣ Start MLflow Tracking Server**
 
 ```powershell
-mkdir ml_ops\mlflow
-cd ml_ops\mlflow
+cd T:\dev\Learn\AI\learn_ai\ml_ops
+
+# Create the artifacts directory if it doesn't exist
+mkdir -p mlflow\artifacts
 
 mlflow server `
     --backend-store-uri postgresql://postgres:edno@localhost:5432/mlflow_db `
-    --default-artifact-root "T:/dev/Learn/AI/learn_ai/ml_ops/mlflow/artifacts" `
+    --default-artifact-root "T:\dev\Learn\AI\learn_ai\ml_ops\mlflow\artifacts" `
     --host 127.0.0.1 `
     --port 5000
 ```
@@ -165,15 +167,12 @@ import mlflow
 import mlflow.sklearn
 from mlflow.models.signature import infer_signature
 
-# Paths
-DATA_PATH = os.path.join(os.path.dirname(__file__), "data", "driver_stats.parquet")
-
 # MLflow config
 mlflow.set_tracking_uri("http://127.0.0.1:5000")
 mlflow.set_experiment("Feast-MLflow-Demo")
 
 # Load data
-df = pd.read_parquet(DATA_PATH)
+df = pd.read_parquet("data/driver_stats.parquet")
 X = df[["conv_rate", "acc_rate", "avg_daily_trips"]]
 y = (df["conv_rate"] > 0.5).astype(int)
 
@@ -202,6 +201,7 @@ with mlflow.start_run():
     )
 
     print(f"✅ Model logged. Accuracy={acc:.4f}")
+    print(f"Artifact URI: {mlflow.get_artifact_uri()}")
 ```
 
 Run:

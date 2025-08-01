@@ -36,5 +36,6 @@ with mlflow.start_run():
     )
 
     print(f"✅ Model logged. Accuracy={acc:.4f}")
+    print(f"Artifact URI: {mlflow.get_artifact_uri()}")
     
 print("Tracking URI in this run:", mlflow.get_tracking_uri())
