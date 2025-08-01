@@ -1,0 +1,53 @@
+# --------------------
+# Python
+# --------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pkl
+*.pickle
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# --------------------
+# MLflow
+# --------------------
+# MLflow artifact storage (can get very large)
+mlflow_artifacts/
+# SQLite DB if not needed in repo
+mlflow_artifacts/*.db
+
+# --------------------
+# Feast
+# --------------------
+# Generated Feast registry
+feature_repo/data/
+feature_repo/registry.db
+feature_repo/online_store.db
+feature_repo/registry.json
+feature_repo/registry.pickle
+feature_repo/*.parquet
+
+# --------------------
+# Logs & temp files
+# --------------------
+*.log
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# --------------------
+# IDE configs
+# --------------------
+.vscode/
+.idea/
+*.iml

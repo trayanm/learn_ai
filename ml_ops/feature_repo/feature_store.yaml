@@ -1,0 +1,18 @@
+project: feature_repo
+
+registry: data/registry.db
+
+provider: local
+
+offline_store:
+  type: postgres
+  host: localhost
+  port: 5432
+  database: feast_db
+  db_schema: public
+  user: postgres
+  password: edno
+
+online_store:
+  type: sqlite
+  path: data/online_store.db
