@@ -21,7 +21,7 @@ wiki_wiki = wikipediaapi.Wikipedia(
 domain_specific_data = {
     "data center": "A data center is a facility used to house computer systems and associated components, such as telecommunications and storage systems.",
     "AI ethics": "AI ethics is a branch of ethics of technology specific to artificially intelligent systems.",
-    "Trajan": "Imperator of Rome. Has big nose",
+    "Trajan": "Imperator of Rome. Has big nose. Born in Spain",
 }
 
 # Step 5 - Load a Pre-Trained NLP Model and Tokenizer
@@ -39,22 +39,24 @@ def rag_system(query):
     domain_data = None
     for key in domain_specific_data:
         if key.lower() in query.lower():
+            print(f"Pair '{key}': {domain_specific_data[key]}")
             domain_data = domain_specific_data[key]
             break
-    print("Domain-specific data:", domain_data)
 
     # Step 2: Fetch data from Wikipedia
     wiki_page = wiki_wiki.page(query)
     wiki_summary = wiki_page.summary if wiki_page.exists() else None
-    print("Wikipedia summary:", wiki_summary[:20])
 
     # Step 3: Combine and process data
     combined_data = ""
 
     if domain_data:
-        combined_data += domain_data + "\n"
+        print(f"Domain-specific '{query}': {domain_data}")
+        combined_data += domain_data + " "
+
     if wiki_summary:
-        combined_data += wiki_summary + "\n"
+        print(f"Wikipedia summary '{query}': {wiki_summary[:20]}...")
+        combined_data += wiki_summary
 
     if combined_data:
         inputs = tokenizer(

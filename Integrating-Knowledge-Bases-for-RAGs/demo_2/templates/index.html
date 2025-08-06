@@ -9,19 +9,24 @@
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 20px;
-            background-color: #f4f4f4;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
         }
         .container {
             max-width: 600px;
             margin: auto;
-            background: white;
+            background: #2d2d2d;
             padding: 20px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
             border-radius: 8px;
+            border: 1px solid #404040;
         }
         h1 {
             text-align: center;
-            color: #333;
+            color: #ffffff;
+        }
+        h2 {
+            color: #ffffff;
         }
         form {
             margin-bottom: 20px;
@@ -30,8 +35,18 @@
             width: 100%;
             padding: 10px;
             margin-bottom: 10px;
-            border: 1px solid #ccc;
+            border: 1px solid #555;
             border-radius: 4px;
+            background-color: #404040;
+            color: #e0e0e0;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #007BFF;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+        }
+        input[type="text"]::placeholder {
+            color: #aaa;
         }
         input[type="submit"] {
             width: 100%;
@@ -46,9 +61,10 @@
             background-color: #0056b3;
         }
         .response {
-            background: #f8f9fa;
+            background: #333333;
             padding: 15px;
             border-radius: 4px;
+            border: 1px solid #555;
         }
     </style>
 </head>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Base Query</title>
+</head>
+<body>
+    <h1>Enter a Query</h1>
+    <form id="queryForm">
+        <label for="inputText">Enter text:</label>
+        <input type="text" id="inputText" name="inputText" required>
+        <button type="submit">Submit</button>
+    </form>
+    <div id="results"></div>
+
+    <script>
+        document.getElementById('queryForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const inputText = document.getElementById('inputText').value;
+            fetch('/process', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `inputText=${inputText}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('results').innerHTML = 
+                    `<h2>Entities:</h2><p>${data.entities.map(ent => ent[0] + ' (' + ent[1] + ')').join(', ')}</p>
+                     <h2>Response:</h2><p>${data.response}</p>
+                     <h2>Knowledge Graph Size:</h2><p>${data.graph_size} triples</p>`;
+            });
+        });
+    </script>
+</body>
+</html>
