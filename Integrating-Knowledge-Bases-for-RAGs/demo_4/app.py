@@ -384,7 +384,7 @@ def generate_dynamic_graph_visualization(G):
         x=edge_x,
         y=edge_y,
         line=dict(width=4, color="#888"),
-        hoverinfo="none",  # No hover for the line itself
+        hoverinfo="none",
         mode="lines",
         name="Relationships",
         showlegend=False,
@@ -417,14 +417,17 @@ def generate_dynamic_graph_visualization(G):
         y=edge_hover_y,
         mode="markers",
         marker=dict(
-            size=15,  # Reasonable size for hovering
-            color="rgba(0,0,0,0)",  # Transparent
+            size=15,
+            color="rgba(0,0,0,0)",
             line=dict(width=0),
         ),
         hoverinfo="text",
         hovertext=edge_hover_text,
         name="Edge Info",
         showlegend=False,
+        customdata=[
+            f"{edge[0]}|{edge[1]}" for edge in G.edges()
+        ],  # Add edge info for click handling
     )
 
     # Create node traces
@@ -433,6 +436,7 @@ def generate_dynamic_graph_visualization(G):
     node_text = []
     node_colors = []
     node_info = []
+    node_customdata = []
 
     color_map = {
         "person": "#FF6B6B",
@@ -464,6 +468,7 @@ def generate_dynamic_graph_visualization(G):
         node_info.append(
             f"<b>{node}</b><br>Type: <i>{node_type}</i><br>{connection_info}"
         )
+        node_customdata.append(node)  # Add node name for click handling
 
     node_trace = go.Scatter(
         x=node_x,
@@ -477,11 +482,12 @@ def generate_dynamic_graph_visualization(G):
         marker=dict(size=50, color=node_colors, line=dict(width=3, color="white")),
         name="Entities",
         showlegend=False,
+        customdata=node_customdata,  # Add custom data for click handling
     )
 
     # Create the figure with all traces
     fig = go.Figure(
-        data=[edge_trace, edge_hover_trace, node_trace],  # Added edge_hover_trace
+        data=[edge_trace, edge_hover_trace, node_trace],
         layout=go.Layout(
             title=dict(
                 text="Extracted Entities Graph", font=dict(size=20, color="white")
@@ -492,7 +498,7 @@ def generate_dynamic_graph_visualization(G):
             height=550,
             annotations=[
                 dict(
-                    text="Red: People • Teal: Organizations • Blue: Locations • Green: Products<br><i>Hover over edge midpoints to see relationships</i>",
+                    text="Red: People • Teal: Organizations • Blue: Locations • Green: Products<br><i>Click on nodes or edges to highlight connections</i>",
                     showarrow=False,
                     xref="paper",
                     yref="paper",
@@ -511,7 +517,98 @@ def generate_dynamic_graph_visualization(G):
         ),
     )
 
-    return plotly.offline.plot(fig, output_type="div", include_plotlyjs=True)
+    # Convert to HTML with custom JavaScript for click handling
+    config = {"displayModeBar": True}
+    plot_html = plotly.offline.plot(
+        fig, output_type="div", include_plotlyjs=True, config=config
+    )
+
+    # Add custom JavaScript for click handling
+    edges_data = list(G.edges())
+    nodes_data = list(G.nodes())
+    adjacency = {node: list(G.neighbors(node)) for node in G.nodes()}
+
+    custom_js = f"""
+    <script>
+        // Graph data for click handling
+        const graphEdges = {edges_data};
+        const graphNodes = {nodes_data};
+        const adjacency = {adjacency};
+        
+        // Wait for Plotly to load
+        setTimeout(function() {{
+            const plotElement = document.querySelector('.plotly-graph-div');
+            if (!plotElement) return;
+            
+            let originalNodeColors = {[color_map.get(G.nodes[node].get("type", "unknown"), "#CCCCCC") for node in G.nodes()]};
+            let originalEdgeColor = '#888';
+            let isHighlighted = false;
+            
+            plotElement.on('plotly_click', function(data) {{
+                if (!data.points || data.points.length === 0) return;
+                
+                const point = data.points[0];
+                const traceName = point.data.name;
+                
+                // Reset if already highlighted
+                if (isHighlighted) {{
+                    resetHighlight();
+                    return;
+                }}
+                
+                if (traceName === 'Entities') {{
+                    // Node clicked - highlight connected nodes
+                    const clickedNode = point.customdata;
+                    highlightConnectedNodes(clickedNode);
+                }} else if (traceName === 'Edge Info') {{
+                    // Edge clicked - highlight connected edges
+                    const edgeInfo = point.customdata.split('|');
+                    const node1 = edgeInfo[0];
+                    const node2 = edgeInfo[1];
+                    highlightConnectedEdges(node1, node2);
+                }}
+            }});
+            
+            function highlightConnectedNodes(clickedNode) {{
+                const connectedNodes = adjacency[clickedNode] || [];
+                const nodeColors = [...originalNodeColors];
+                
+                // Dim all nodes first
+                for (let i = 0; i < nodeColors.length; i++) {{
+                    nodeColors[i] = 'rgba(100,100,100,0.3)';
+                }}
+                
+                // Highlight clicked node and connected nodes
+                const clickedIndex = graphNodes.indexOf(clickedNode);
+                if (clickedIndex !== -1) {{
+                    nodeColors[clickedIndex] = originalNodeColors[clickedIndex];
+                }}
+                
+                connectedNodes.forEach(node => {{
+                    const index = graphNodes.indexOf(node);
+                    if (index !== -1) {{
+                        nodeColors[index] = originalNodeColors[index];
+                    }}
+                }});
+                
+                Plotly.restyle(plotElement, {{'marker.color': [nodeColors]}}, [2]);
+                isHighlighted = true;
+            }}
+            
+            function highlightConnectedEdges(node1, node2) {{
+                // This is more complex - for now just highlight the connected nodes
+                highlightConnectedNodes(node1);
+            }}
+            
+            function resetHighlight() {{
+                Plotly.restyle(plotElement, {{'marker.color': [originalNodeColors]}}, [2]);
+                isHighlighted = false;
+            }}
+        }}, 1000);
+    </script>
+    """
+
+    return plot_html + custom_js
 
 
 def generate_graph_visualization():
@@ -569,11 +666,12 @@ def generate_graph_visualization():
         x=edge_hover_x,
         y=edge_hover_y,
         mode="markers",
-        marker=dict(size=12, color="rgba(0,0,0,0)", line=dict(width=0)),  # Transparent
+        marker=dict(size=12, color="rgba(0,0,0,0)", line=dict(width=0)),
         hoverinfo="text",
         hovertext=edge_hover_text,
         name="Edge Info",
         showlegend=False,
+        customdata=[f"{edge[0]}|{edge[1]}" for edge in G.edges()],  # Add edge info
     )
 
     # Create node traces
@@ -617,11 +715,12 @@ def generate_graph_visualization():
         hoverinfo="text",
         hovertext=node_info,
         marker=dict(size=35, color=node_colors, line=dict(width=2, color="white")),
+        customdata=list(G.nodes()),  # Add custom data for click handling
     )
 
     # Create the figure
     fig = go.Figure(
-        data=[edge_trace, edge_hover_trace, node_trace],  # Added edge_hover_trace
+        data=[edge_trace, edge_hover_trace, node_trace],
         layout=go.Layout(
             title=dict(
                 text="Knowledge Base Graph Visualization",
@@ -632,7 +731,7 @@ def generate_graph_visualization():
             margin=dict(b=20, l=5, r=5, t=40),
             annotations=[
                 dict(
-                    text="Red nodes: People, Teal nodes: Companies<br><i>Hover over edge midpoints to see relationships</i>",
+                    text="Red nodes: People, Teal nodes: Companies<br><i>Click on nodes to highlight connections</i>",
                     showarrow=False,
                     xref="paper",
                     yref="paper",
@@ -651,7 +750,70 @@ def generate_graph_visualization():
         ),
     )
 
-    return plotly.offline.plot(fig, output_type="div", include_plotlyjs=True)
+    # Convert to HTML with custom JavaScript
+    config = {"displayModeBar": False}
+    plot_html = plotly.offline.plot(
+        fig, output_type="div", include_plotlyjs=True, config=config
+    )
+
+    # Add custom JavaScript for click handling
+    adjacency = {node: list(G.neighbors(node)) for node in G.nodes()}
+    original_colors = [
+        ("#FF6B6B" if G.nodes[node].get("type") == "person" else "#4ECDC4")
+        for node in G.nodes()
+    ]
+
+    custom_js = f"""
+    <script>
+        setTimeout(function() {{
+            const plotElement = document.querySelector('.plotly-graph-div');
+            if (!plotElement) return;
+            
+            const adjacency = {adjacency};
+            const originalColors = {original_colors};
+            const nodes = {list(G.nodes())};
+            let isHighlighted = false;
+            
+            plotElement.on('plotly_click', function(data) {{
+                if (!data.points || data.points.length === 0) return;
+                
+                const point = data.points[0];
+                if (point.data.name !== 'Entities') return;
+                
+                const clickedNode = point.customdata;
+                
+                if (isHighlighted) {{
+                    // Reset highlight
+                    Plotly.restyle(plotElement, {{'marker.color': [originalColors]}}, [2]);
+                    isHighlighted = false;
+                }} else {{
+                    // Highlight connected nodes
+                    const connectedNodes = adjacency[clickedNode] || [];
+                    const nodeColors = originalColors.map(() => 'rgba(100,100,100,0.3)');
+                    
+                    // Highlight clicked node
+                    const clickedIndex = nodes.indexOf(clickedNode);
+                    if (clickedIndex !== -1) {{
+                        nodeColors[clickedIndex] = originalColors[clickedIndex];
+                    }}
+                    
+                    // Highlight connected nodes
+                    connectedNodes.forEach(node => {{
+                        const index = nodes.indexOf(node);
+                        if (index !== -1) {{
+                            nodeColors[index] = originalColors[index];
+                        }}
+                    }});
+                    
+                    Plotly.restyle(plotElement, {{'marker.color': [nodeColors]}}, [2]);
+                    isHighlighted = true;
+                }}
+            }});
+        }}, 1000);
+    </script>
+    """
+
+    return plot_html + custom_js
 
 
 def find_answer(query):
