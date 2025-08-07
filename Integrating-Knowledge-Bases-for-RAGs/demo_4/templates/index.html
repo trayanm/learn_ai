@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAG System with Graph Visualization</title>
+    <title>RAG System with Knowledge Graph</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -47,6 +47,22 @@
         h2 {
             color: #ffffff;
             margin-top: 0;
+        }
+        .navigation {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .navigation a {
+            color: #007BFF;
+            text-decoration: none;
+            margin: 0 10px;
+            padding: 8px 16px;
+            border: 1px solid #007BFF;
+            border-radius: 4px;
+        }
+        .navigation a:hover {
+            background-color: #007BFF;
+            color: white;
         }
         form {
             margin-bottom: 20px;
@@ -105,13 +121,17 @@
 <body>
 
 <div class="container">
+    <div class="navigation">
+        <a href="/extract">Entity Extraction →</a>
+    </div>
+    
     <h1>RAG System with Knowledge Graph</h1>
     
     <div class="content-grid">
         <div class="query-section">
             <h2>Query Interface</h2>
             <form method="POST">
-                <input type="text" name="query" placeholder="Ask about founders and companies..." required>
+                <input type="text" name="query" placeholder="Ask about founders and companies..." value="{{ query or '' }}" required>
                 <input type="submit" value="Get Response">
             </form>
 
