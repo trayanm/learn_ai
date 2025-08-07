@@ -1,4 +1,5 @@
 from flask import Flask, request, render_template, jsonify
+from flask_cors import CORS
 import json
 import networkx as nx
 import plotly.graph_objects as go
@@ -6,6 +7,9 @@ import plotly
 import re
 
 app = Flask(__name__)
+
+# Configure CORS to allow requests from React development server
+CORS(app, origins=["http://localhost:3000"])
 
 # Load spacy model for NER (optional)
 try:
