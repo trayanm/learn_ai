@@ -425,9 +425,7 @@ def generate_dynamic_graph_visualization(G):
         hovertext=edge_hover_text,
         name="Edge Info",
         showlegend=False,
-        customdata=[
-            f"{edge[0]}|{edge[1]}" for edge in G.edges()
-        ],  # Add edge info for click handling
+        customdata=[f"{edge[0]}|{edge[1]}" for edge in G.edges()],
     )
 
     # Create node traces
@@ -438,8 +436,13 @@ def generate_dynamic_graph_visualization(G):
     node_info = []
     node_customdata = []
 
+    # Color map that matches the HTML template
     color_map = {
-        "person": "#FF6B6B",
+        "PERSON": "#FF6B6B",  # Red
+        "ORG": "#4ECDC4",  # Teal
+        "GPE": "#45B7D1",  # Blue
+        "PRODUCT": "#96CEB4",  # Green
+        "person": "#FF6B6B",  # Also support lowercase
         "organization": "#4ECDC4",
         "location": "#45B7D1",
         "product": "#96CEB4",
@@ -468,7 +471,7 @@ def generate_dynamic_graph_visualization(G):
         node_info.append(
             f"<b>{node}</b><br>Type: <i>{node_type}</i><br>{connection_info}"
         )
-        node_customdata.append(node)  # Add node name for click handling
+        node_customdata.append(node)
 
     node_trace = go.Scatter(
         x=node_x,
@@ -482,7 +485,7 @@ def generate_dynamic_graph_visualization(G):
         marker=dict(size=50, color=node_colors, line=dict(width=3, color="white")),
         name="Entities",
         showlegend=False,
-        customdata=node_customdata,  # Add custom data for click handling
+        customdata=node_customdata,
     )
 
     # Create the figure with all traces
@@ -498,7 +501,7 @@ def generate_dynamic_graph_visualization(G):
             height=550,
             annotations=[
                 dict(
-                    text="Red: People • Teal: Organizations • Blue: Locations • Green: Products<br><i>Click on nodes or edges to highlight connections</i>",
+                    text="Red: People • Teal: Organizations • Blue: Locations • Green: Products<br><i>Click on nodes or edges to highlight connections • Use controls to show/hide nodes</i>",
                     showarrow=False,
                     xref="paper",
                     yref="paper",
@@ -523,71 +526,109 @@ def generate_dynamic_graph_visualization(G):
         fig, output_type="div", include_plotlyjs=True, config=config
     )
 
-    # Add custom JavaScript for click handling
+    # Add enhanced JavaScript for click handling and node visibility
     edges_data = list(G.edges())
     nodes_data = list(G.nodes())
     adjacency = {node: list(G.neighbors(node)) for node in G.nodes()}
+    original_colors = [
+        color_map.get(G.nodes[node].get("type", "unknown"), "#CCCCCC")
+        for node in G.nodes()
+    ]
+
+    # Create node positions and data for JavaScript
+    node_positions = {node: pos[node] for node in G.nodes()}
 
     custom_js = f"""
     <script>
-        // Graph data for click handling
-        const graphEdges = {edges_data};
-        const graphNodes = {nodes_data};
-        const adjacency = {adjacency};
+        console.log('Loading graph JavaScript...');
+        
+        // Graph data for node visibility and interaction
+        const graphData = {{
+            nodes: {nodes_data},
+            edges: {edges_data},
+            adjacency: {adjacency},
+            originalColors: {original_colors},
+            positions: {node_positions}
+        }};
+        
+        console.log('Graph data loaded:', graphData);
+        
+        let isHighlighted = false;
+        let visibleNodes = [...graphData.nodes]; // All nodes visible by default
         
         // Wait for Plotly to load
         setTimeout(function() {{
+            console.log('Setting up Plotly interactions...');
             const plotElement = document.querySelector('.plotly-graph-div');
-            if (!plotElement) return;
+            if (!plotElement) {{
+                console.error('Plot element not found!');
+                return;
+            }}
             
-            let originalNodeColors = {[color_map.get(G.nodes[node].get("type", "unknown"), "#CCCCCC") for node in G.nodes()]};
-            let originalEdgeColor = '#888';
-            let isHighlighted = false;
+            console.log('Plot element found, setting up events...');
             
+            // Click event handler
             plotElement.on('plotly_click', function(data) {{
+                console.log('Graph clicked:', data);
                 if (!data.points || data.points.length === 0) return;
                 
                 const point = data.points[0];
                 const traceName = point.data.name;
                 
-                // Reset if already highlighted
-                if (isHighlighted) {{
-                    resetHighlight();
-                    return;
-                }}
-                
                 if (traceName === 'Entities') {{
-                    // Node clicked - highlight connected nodes
                     const clickedNode = point.customdata;
-                    highlightConnectedNodes(clickedNode);
+                    console.log('Node clicked:', clickedNode);
+                    
+                    if (isHighlighted) {{
+                        resetGraphHighlight();
+                    }} else {{
+                        highlightConnectedNodes(clickedNode);
+                    }}
                 }} else if (traceName === 'Edge Info') {{
-                    // Edge clicked - highlight connected edges
                     const edgeInfo = point.customdata.split('|');
                     const node1 = edgeInfo[0];
                     const node2 = edgeInfo[1];
-                    highlightConnectedEdges(node1, node2);
+                    console.log('Edge clicked:', node1, '->', node2);
+                    
+                    if (isHighlighted) {{
+                        resetGraphHighlight();
+                    }} else {{
+                        highlightConnectedNodes(node1);
+                    }}
+                }}
+            }});
+            
+            // Double-click to reset
+            plotElement.on('plotly_doubleclick', function() {{
+                if (isHighlighted) {{
+                    resetGraphHighlight();
                 }}
             }});
             
             function highlightConnectedNodes(clickedNode) {{
-                const connectedNodes = adjacency[clickedNode] || [];
-                const nodeColors = [...originalNodeColors];
+                console.log('Highlighting connected nodes for:', clickedNode);
+                const connectedNodes = graphData.adjacency[clickedNode] || [];
+                const nodeColors = [...graphData.originalColors];
                 
                 // Dim all nodes first
                 for (let i = 0; i < nodeColors.length; i++) {{
-                    nodeColors[i] = 'rgba(100,100,100,0.3)';
+                    const hex = graphData.originalColors[i];
+                    const r = parseInt(hex.slice(1, 3), 16);
+                    const g = parseInt(hex.slice(3, 5), 16);
+                    const b = parseInt(hex.slice(5, 7), 16);
+                    nodeColors[i] = `rgba(${{r}},${{g}},${{b}},0.3)`;
                 }}
                 
                 // Highlight clicked node and connected nodes
-                const clickedIndex = graphNodes.indexOf(clickedNode);
+                const clickedIndex = graphData.nodes.indexOf(clickedNode);
                 if (clickedIndex !== -1) {{
-                    nodeColors[clickedIndex] = originalNodeColors[clickedIndex];
+                    nodeColors[clickedIndex] = graphData.originalColors[clickedIndex];
                 }}
                 
                 connectedNodes.forEach(node => {{
-                    const index = graphNodes.indexOf(node);
+                    const index = graphData.nodes.indexOf(node);
                     if (index !== -1) {{
-                        nodeColors[index] = originalNodeColors[index];
+                        nodeColors[index] = graphData.originalColors[index];
                     }}
                 }});
                 
@@ -595,15 +636,104 @@ def generate_dynamic_graph_visualization(G):
                 isHighlighted = true;
             }}
             
-            function highlightConnectedEdges(node1, node2) {{
-                // This is more complex - for now just highlight the connected nodes
-                highlightConnectedNodes(node1);
-            }}
-            
-            function resetHighlight() {{
-                Plotly.restyle(plotElement, {{'marker.color': [originalNodeColors]}}, [2]);
+            function resetGraphHighlight() {{
+                console.log('Resetting graph highlight');
+                const nodeColors = graphData.nodes.map((node, index) => {{
+                    return visibleNodes.includes(node) ? graphData.originalColors[index] : 'rgba(0,0,0,0)';
+                }});
+                Plotly.restyle(plotElement, {{'marker.color': [nodeColors]}}, [2]);
                 isHighlighted = false;
             }}
+            
+            function updateNodeVisibility() {{
+                console.log('Updating node visibility, visible nodes:', visibleNodes);
+                
+                // Update node visibility
+                const nodeColors = graphData.nodes.map((node, index) => {{
+                    return visibleNodes.includes(node) ? graphData.originalColors[index] : 'rgba(0,0,0,0)';
+                }});
+                
+                const nodeTexts = graphData.nodes.map(node => {{
+                    return visibleNodes.includes(node) ? node : '';
+                }});
+                
+                console.log('Updating node colors and texts...');
+                Plotly.restyle(plotElement, {{
+                    'marker.color': [nodeColors],
+                    'text': [nodeTexts]
+                }}, [2]);
+                
+                // Update edge visibility - only show edges between visible nodes
+                const edgeX = [];
+                const edgeY = [];
+                const visibleEdgeHoverX = [];
+                const visibleEdgeHoverY = [];
+                const visibleEdgeHoverText = [];
+                
+                graphData.edges.forEach(edge => {{
+                    const [node1, node2] = edge;
+                    if (visibleNodes.includes(node1) && visibleNodes.includes(node2)) {{
+                        const [x0, y0] = [graphData.positions[node1][0], graphData.positions[node1][1]];
+                        const [x1, y1] = [graphData.positions[node2][0], graphData.positions[node2][1]];
+                        edgeX.push(x0, x1, null);
+                        edgeY.push(y0, y1, null);
+                        
+                        // Add hover point at midpoint
+                        visibleEdgeHoverX.push((x0 + x1) / 2);
+                        visibleEdgeHoverY.push((y0 + y1) / 2);
+                        visibleEdgeHoverText.push(`<b>${{node1}} ←→ ${{node2}}</b><br>Relationship: <i>related</i>`);
+                    }}
+                }});
+                
+                console.log('Updating edge traces...');
+                Plotly.restyle(plotElement, {{'x': [edgeX], 'y': [edgeY]}}, [0]);
+                Plotly.restyle(plotElement, {{'x': [visibleEdgeHoverX], 'y': [visibleEdgeHoverY], 'hovertext': [visibleEdgeHoverText]}}, [1]);
+                
+                isHighlighted = false;
+            }}
+            
+            // Global functions for external access
+            window.updateGraphNodeVisibility = function(newVisibleNodes) {{
+                console.log('updateGraphNodeVisibility called with:', newVisibleNodes);
+                visibleNodes = newVisibleNodes;
+                updateNodeVisibility();
+            }};
+            
+            window.resetGraphHighlight = resetGraphHighlight;
+            
+            window.showOnlyConnectedNodes = function() {{
+                console.log('showOnlyConnectedNodes called');
+                // Find all nodes that have connections
+                const connectedNodes = [];
+                for (const [node, connections] of Object.entries(graphData.adjacency)) {{
+                    if (connections.length > 0) {{
+                        connectedNodes.push(node);
+                        connections.forEach(conn => {{
+                            if (!connectedNodes.includes(conn)) {{
+                                connectedNodes.push(conn);
+                            }}
+                        }});
+                    }}
+                }}
+                
+                visibleNodes = connectedNodes;
+                updateNodeVisibility();
+                
+                // Update checkboxes
+                const checkboxes = document.querySelectorAll('#nodeControlsContainer input[type="checkbox"]');
+                checkboxes.forEach(cb => {{
+                    if (cb.dataset.type === 'individual-node') {{
+                        cb.checked = connectedNodes.includes(cb.dataset.value);
+                    }} else if (cb.dataset.type === 'entity-type') {{
+                        const typeNodes = document.querySelectorAll(`input[data-entity-type="${{cb.dataset.value}}"]`);
+                        const hasVisibleNodes = Array.from(typeNodes).some(node => connectedNodes.includes(node.dataset.value));
+                        cb.checked = hasVisibleNodes;
+                    }}
+                }});
+            }};
+            
+            console.log('Graph functions registered successfully');
+            
         }}, 1000);
     </script>
     """
@@ -671,7 +801,7 @@ def generate_graph_visualization():
         hovertext=edge_hover_text,
         name="Edge Info",
         showlegend=False,
-        customdata=[f"{edge[0]}|{edge[1]}" for edge in G.edges()],  # Add edge info
+        customdata=[f"{edge[0]}|{edge[1]}" for edge in G.edges()],
     )
 
     # Create node traces
@@ -715,7 +845,7 @@ def generate_graph_visualization():
         hoverinfo="text",
         hovertext=node_info,
         marker=dict(size=35, color=node_colors, line=dict(width=2, color="white")),
-        customdata=list(G.nodes()),  # Add custom data for click handling
+        customdata=list(G.nodes()),
     )
 
     # Create the figure
@@ -751,7 +881,7 @@ def generate_graph_visualization():
     )
 
     # Convert to HTML with custom JavaScript
-    config = {"displayModeBar": False}
+    config = {"displayModeBar": True}  # Enable toolbar
     plot_html = plotly.offline.plot(
         fig, output_type="div", include_plotlyjs=True, config=config
     )
@@ -763,18 +893,26 @@ def generate_graph_visualization():
         for node in G.nodes()
     ]
 
-    custom_js = f"""
+    # Use regular string formatting to avoid f-string issues with JavaScript
+    custom_js = (
+        """
     <script>
-        setTimeout(function() {{
+        setTimeout(function() {
             const plotElement = document.querySelector('.plotly-graph-div');
             if (!plotElement) return;
             
-            const adjacency = {adjacency};
-            const originalColors = {original_colors};
-            const nodes = {list(G.nodes())};
+            const adjacency = """
+        + str(adjacency)
+        + """;
+            const originalColors = """
+        + str(original_colors)
+        + """;
+            const nodes = """
+        + str(list(G.nodes()))
+        + """;
             let isHighlighted = false;
             
-            plotElement.on('plotly_click', function(data) {{
+            plotElement.on('plotly_click', function(data) {
                 if (!data.points || data.points.length === 0) return;
                 
                 const point = data.points[0];
@@ -782,36 +920,42 @@ def generate_graph_visualization():
                 
                 const clickedNode = point.customdata;
                 
-                if (isHighlighted) {{
+                if (isHighlighted) {
                     // Reset highlight
-                    Plotly.restyle(plotElement, {{'marker.color': [originalColors]}}, [2]);
+                    Plotly.restyle(plotElement, {'marker.color': [originalColors]}, [2]);
                     isHighlighted = false;
-                }} else {{
+                } else {
                     // Highlight connected nodes
                     const connectedNodes = adjacency[clickedNode] || [];
-                    const nodeColors = originalColors.map(() => 'rgba(100,100,100,0.3)');
+                    const nodeColors = originalColors.map((color) => {
+                        const r = parseInt(color.slice(1, 3), 16);
+                        const g = parseInt(color.slice(3, 5), 16);
+                        const b = parseInt(color.slice(5, 7), 16);
+                        return `rgba(${r},${g},${b},0.3)`;
+                    });
                     
                     // Highlight clicked node
                     const clickedIndex = nodes.indexOf(clickedNode);
-                    if (clickedIndex !== -1) {{
+                    if (clickedIndex !== -1) {
                         nodeColors[clickedIndex] = originalColors[clickedIndex];
-                    }}
+                    }
                     
                     // Highlight connected nodes
-                    connectedNodes.forEach(node => {{
+                    connectedNodes.forEach(node => {
                         const index = nodes.indexOf(node);
-                        if (index !== -1) {{
+                        if (index !== -1) {
                             nodeColors[index] = originalColors[index];
-                        }}
-                    }});
+                        }
+                    });
                     
-                    Plotly.restyle(plotElement, {{'marker.color': [nodeColors]}}, [2]);
+                    Plotly.restyle(plotElement, {'marker.color': [nodeColors]}, [2]);
                     isHighlighted = true;
-                }}
-            }});
-        }}, 1000);
+                }
+            });
+        }, 1000);
     </script>
     """
+    )
 
     return plot_html + custom_js
 
