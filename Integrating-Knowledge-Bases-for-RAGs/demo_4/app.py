@@ -368,14 +368,11 @@ def generate_dynamic_graph_visualization(G):
         return "<div style='color: white; text-align: center; padding: 20px;'>No entities found to visualize</div>"
 
     # Get node positions with better spacing
-    pos = nx.spring_layout(
-        G, k=4, iterations=100, seed=42
-    )  # Increased k and iterations for better spacing
+    pos = nx.spring_layout(G, k=4, iterations=100, seed=42)
 
-    # Create edge traces
+    # Create visible edge traces (lines only)
     edge_x = []
     edge_y = []
-    edge_info = []
 
     for edge in G.edges():
         x0, y0 = pos[edge[0]]
@@ -383,16 +380,51 @@ def generate_dynamic_graph_visualization(G):
         edge_x.extend([x0, x1, None])
         edge_y.extend([y0, y1, None])
 
-        # Add edge info
-        relation = G.edges[edge].get("relation", "related")
-        edge_info.append(f"{edge[0]} -{relation}-> {edge[1]}")
-
     edge_trace = go.Scatter(
         x=edge_x,
         y=edge_y,
-        line=dict(width=3, color="#888"),  # Made lines thicker
-        hoverinfo="none",
+        line=dict(width=4, color="#888"),
+        hoverinfo="none",  # No hover for the line itself
         mode="lines",
+        name="Relationships",
+        showlegend=False,
+    )
+
+    # Create invisible hover traces for edges (points at edge midpoints)
+    edge_hover_x = []
+    edge_hover_y = []
+    edge_hover_text = []
+
+    for edge in G.edges():
+        x0, y0 = pos[edge[0]]
+        x1, y1 = pos[edge[1]]
+
+        # Calculate midpoint
+        mid_x = (x0 + x1) / 2
+        mid_y = (y0 + y1) / 2
+
+        edge_hover_x.append(mid_x)
+        edge_hover_y.append(mid_y)
+
+        # Add edge info for hover
+        relation = G.edges[edge].get("relation", "related")
+        hover_text = f"<b>{edge[0]} ←→ {edge[1]}</b><br>Relationship: <i>{relation}</i>"
+        edge_hover_text.append(hover_text)
+
+    # Create invisible markers at edge midpoints for hovering
+    edge_hover_trace = go.Scatter(
+        x=edge_hover_x,
+        y=edge_hover_y,
+        mode="markers",
+        marker=dict(
+            size=15,  # Reasonable size for hovering
+            color="rgba(0,0,0,0)",  # Transparent
+            line=dict(width=0),
+        ),
+        hoverinfo="text",
+        hovertext=edge_hover_text,
+        name="Edge Info",
+        showlegend=False,
     )
 
     # Create node traces
@@ -403,11 +435,11 @@ def generate_dynamic_graph_visualization(G):
     node_info = []
 
     color_map = {
-        "person": "#FF6B6B",  # Red
-        "organization": "#4ECDC4",  # Teal
-        "location": "#45B7D1",  # Blue
-        "product": "#96CEB4",  # Green
-        "company": "#4ECDC4",  # Teal (for backward compatibility)
+        "person": "#FF6B6B",
+        "organization": "#4ECDC4",
+        "location": "#45B7D1",
+        "product": "#96CEB4",
+        "company": "#4ECDC4",
     }
 
     for node in G.nodes():
@@ -429,7 +461,9 @@ def generate_dynamic_graph_visualization(G):
         if len(connections) > 3:
             connection_info += f" and {len(connections) - 3} more..."
 
-        node_info.append(f"{node} ({node_type})<br>{connection_info}")
+        node_info.append(
+            f"<b>{node}</b><br>Type: <i>{node_type}</i><br>{connection_info}"
+        )
 
     node_trace = go.Scatter(
         x=node_x,
@@ -437,38 +471,36 @@ def generate_dynamic_graph_visualization(G):
         mode="markers+text",
         text=node_text,
         textposition="middle center",
-        textfont=dict(
-            color="white", size=12, family="Arial Black"
-        ),  # Made text bigger and bolder
+        textfont=dict(color="white", size=12, family="Arial Black"),
         hoverinfo="text",
         hovertext=node_info,
-        marker=dict(
-            size=50, color=node_colors, line=dict(width=3, color="white")
-        ),  # Made nodes bigger
+        marker=dict(size=50, color=node_colors, line=dict(width=3, color="white")),
+        name="Entities",
+        showlegend=False,
     )
 
-    # Create the figure with larger size
+    # Create the figure with all traces
     fig = go.Figure(
-        data=[edge_trace, node_trace],
+        data=[edge_trace, edge_hover_trace, node_trace],  # Added edge_hover_trace
         layout=go.Layout(
             title=dict(
-                text="Extracted Entities Graph",
+                text="Extracted Entities Graph", font=dict(size=20, color="white")
             ),
             showlegend=False,
             hovermode="closest",
-            margin=dict(b=40, l=40, r=40, t=60),  # Increased margins
-            height=550,  # Set explicit height
+            margin=dict(b=40, l=40, r=40, t=60),
+            height=550,
             annotations=[
                 dict(
-                    text="Red: People • Teal: Organizations • Blue: Locations • Green: Products",
+                    text="Red: People • Teal: Organizations • Blue: Locations • Green: Products<br><i>Hover over edge midpoints to see relationships</i>",
                     showarrow=False,
                     xref="paper",
                     yref="paper",
                     x=0.5,
-                    y=-0.1,
+                    y=-0.12,
                     xanchor="center",
                     yanchor="bottom",
-                    font=dict(color="white", size=12),
+                    font=dict(color="white", size=11),
                 )
             ],
             xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
@@ -492,9 +524,10 @@ def generate_graph_visualization():
     # Get node positions
     pos = nx.spring_layout(G, k=3, iterations=50, seed=42)
 
-    # Create edge traces
+    # Create visible edge traces (lines only)
     edge_x = []
     edge_y = []
+
     for edge in G.edges():
         x0, y0 = pos[edge[0]]
         x1, y1 = pos[edge[1]]
@@ -504,9 +537,43 @@ def generate_graph_visualization():
     edge_trace = go.Scatter(
         x=edge_x,
         y=edge_y,
-        line=dict(width=2, color="#888"),
+        line=dict(width=3, color="#888"),
         hoverinfo="none",
         mode="lines",
+        name="Relationships",
+        showlegend=False,
+    )
+
+    # Create invisible hover traces for edges
+    edge_hover_x = []
+    edge_hover_y = []
+    edge_hover_text = []
+
+    for edge in G.edges():
+        x0, y0 = pos[edge[0]]
+        x1, y1 = pos[edge[1]]
+
+        # Calculate midpoint
+        mid_x = (x0 + x1) / 2
+        mid_y = (y0 + y1) / 2
+
+        edge_hover_x.append(mid_x)
+        edge_hover_y.append(mid_y)
+
+        # Add edge info for hover
+        relation = G.edges[edge].get("relation", "founded")
+        hover_text = f"<b>{edge[0]} ←→ {edge[1]}</b><br>Relationship: <i>{relation}</i>"
+        edge_hover_text.append(hover_text)
+
+    edge_hover_trace = go.Scatter(
+        x=edge_hover_x,
+        y=edge_hover_y,
+        mode="markers",
+        marker=dict(size=12, color="rgba(0,0,0,0)", line=dict(width=0)),  # Transparent
+        hoverinfo="text",
+        hovertext=edge_hover_text,
+        name="Edge Info",
+        showlegend=False,
     )
 
     # Create node traces
@@ -514,6 +581,7 @@ def generate_graph_visualization():
     node_y = []
     node_text = []
     node_colors = []
+    node_info = []
 
     for node in G.nodes():
         x, y = pos[node]
@@ -522,10 +590,22 @@ def generate_graph_visualization():
         node_text.append(node)
 
         # Color nodes by type
-        if G.nodes[node].get("type") == "person":
-            node_colors.append("#FF6B6B")  # Red for persons
+        node_type = G.nodes[node].get("type", "unknown")
+        if node_type == "person":
+            node_colors.append("#FF6B6B")
         else:
-            node_colors.append("#4ECDC4")  # Teal for companies
+            node_colors.append("#4ECDC4")
+
+        # Add node hover info
+        connections = list(G.neighbors(node))
+        connection_info = (
+            f"Connections: {', '.join(connections)}"
+            if connections
+            else "No connections"
+        )
+        node_info.append(
+            f"<b>{node}</b><br>Type: <i>{node_type}</i><br>{connection_info}"
+        )
 
     node_trace = go.Scatter(
         x=node_x,
@@ -533,13 +613,15 @@ def generate_graph_visualization():
         mode="markers+text",
         text=node_text,
         textposition="middle center",
+        textfont=dict(color="white", size=12),
         hoverinfo="text",
+        hovertext=node_info,
         marker=dict(size=35, color=node_colors, line=dict(width=2, color="white")),
     )
 
     # Create the figure
     fig = go.Figure(
-        data=[edge_trace, node_trace],
+        data=[edge_trace, edge_hover_trace, node_trace],  # Added edge_hover_trace
         layout=go.Layout(
             title=dict(
                 text="Knowledge Base Graph Visualization",
@@ -550,21 +632,22 @@ def generate_graph_visualization():
             margin=dict(b=20, l=5, r=5, t=40),
             annotations=[
                 dict(
-                    text="Red nodes: People, Teal nodes: Companies",
+                    text="Red nodes: People, Teal nodes: Companies<br><i>Hover over edge midpoints to see relationships</i>",
                     showarrow=False,
                     xref="paper",
                     yref="paper",
                     x=0.005,
-                    y=-0.002,
+                    y=-0.05,
                     xanchor="left",
                     yanchor="bottom",
-                    font=dict(color="white", size=12),
+                    font=dict(color="white", size=11),
                 )
             ],
             xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             plot_bgcolor="rgba(0,0,0,0)",
             paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="white"),
         ),
     )
 
