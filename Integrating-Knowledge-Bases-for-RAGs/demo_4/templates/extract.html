@@ -264,6 +264,8 @@
             }
         }
     </style>
+
+    <script src="{{ url_for('static', filename='js/graph_interactions.js') }}"></script>
 </head>
 <body>
 
@@ -393,9 +395,24 @@
 
 <!-- JavaScript for Node Controls -->
 <script>
-// Wait for page to load
+// Node control functionality
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Page loaded, setting up node controls...');
+    
+    // Initialize graph interactions if we have graph data
+    {% if graph_data and graph_data.nodes %}
+    const graphData = {{ graph_data|tojson }};
+    console.log('Graph data received:', graphData);
+    
+    // Check if we actually have nodes
+    if (graphData.nodes && graphData.nodes.length > 0) {
+        initializeGraphInteractions(graphData);
+    } else {
+        console.log('No nodes in graph data, skipping graph initialization');
+    }
+    {% else %}
+    console.log('No graph data available');
+    {% endif %}
     
     // Add event listeners to checkboxes
     const checkboxes = document.querySelectorAll('#nodeControlsContainer input[type="checkbox"]');
@@ -436,8 +453,6 @@ function handleNodeVisibilityChange(event) {
         const typeCheckbox = document.querySelector(`input[data-value="${entityType}"][data-type="entity-type"]`);
         
         if (typeCheckbox) {
-            // If all nodes of this type are unchecked, uncheck the type checkbox
-            // If any nodes of this type are checked, check the type checkbox
             typeCheckbox.checked = checkedTypeNodes.length > 0;
         }
     }
@@ -506,7 +521,6 @@ function hideAllNodes() {
 
 function showOnlyConnected() {
     console.log('Show only connected clicked');
-    // This will be implemented in the graph JavaScript
     if (window.showOnlyConnectedNodes) {
         window.showOnlyConnectedNodes();
     } else {
@@ -517,22 +531,10 @@ function showOnlyConnected() {
 function resetGraph() {
     console.log('Reset graph clicked');
     showAllNodes();
-    // Reset any highlighting
     if (window.resetGraphHighlight) {
         window.resetGraphHighlight();
     }
 }
-
-// Debug function to check if graph functions are available
-function checkGraphFunctions() {
-    console.log('Graph functions available:');
-    console.log('- updateGraphNodeVisibility:', typeof window.updateGraphNodeVisibility);
-    console.log('- showOnlyConnectedNodes:', typeof window.showOnlyConnectedNodes);
-    console.log('- resetGraphHighlight:', typeof window.resetGraphHighlight);
-}
-
-// Check after a delay
-setTimeout(checkGraphFunctions, 2000);
 </script>
 
 </body>
