@@ -13,28 +13,35 @@ function App() {
   const [error, setError] = useState('');
   const [visibleNodes, setVisibleNodes] = useState([]);
 
-  const handleTextSubmit = useCallback(async (text) => {
-    if (!text.trim()) return;
+const handleTextSubmit = useCallback(async (text) => {
+  if (!text.trim()) return;
 
-    setLoading(true);
-    setError('');
+  setLoading(true);
+  setError('');
 
-    try {
-      const response = await extractEntities(text);
-      setEntities(response.entities);
-      setGraphData(response.graph);
-      
-      // Initialize visible nodes with all nodes
-      if (response.graph && response.graph.nodes) {
-        setVisibleNodes(response.graph.nodes);
-      }
-    } catch (err) {
-      setError('Failed to extract entities. Please try again.');
-      console.error('Error extracting entities:', err);
-    } finally {
-      setLoading(false);
+  try {
+    const response = await extractEntities(text);
+    console.log('API Response:', response); // Debug logging
+    
+    setEntities(response.entities);
+    setGraphData(response.graph);
+    
+    // Initialize visible nodes with all nodes
+    if (response.graph && response.graph.nodes) {
+      // Handle both string nodes and object nodes
+      const nodeNames = response.graph.nodes.map(node => 
+        typeof node === 'string' ? node : node.id || node
+      );
+      console.log('Setting visible nodes:', nodeNames); // Debug logging
+      setVisibleNodes(nodeNames);
     }
-  }, []);
+  } catch (err) {
+    setError('Failed to extract entities. Please try again.');
+    console.error('Error extracting entities:', err);
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   const handleVisibilityChange = useCallback((newVisibleNodes) => {
     setVisibleNodes(newVisibleNodes);

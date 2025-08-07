@@ -1028,29 +1028,44 @@ def api_extract_entities():
         if len(G.nodes()) > 0:
             pos = nx.spring_layout(G, k=4, iterations=100, seed=42)
 
+            color_map = {
+                "PERSON": "#FF6B6B",
+                "ORG": "#4ECDC4",
+                "GPE": "#45B7D1",
+                "PRODUCT": "#96CEB4",
+                "person": "#FF6B6B",
+                "organization": "#4ECDC4",
+                "location": "#45B7D1",
+                "product": "#96CEB4",
+                "company": "#4ECDC4",
+            }
+
             graph_data = {
-                "nodes": [
-                    {"id": node, "type": G.nodes[node].get("type", "unknown")}
+                "nodes": list(G.nodes()),  # Just return node names as strings
+                "edges": list(G.edges()),  # Return edges as tuples
+                "adjacency": {node: list(G.neighbors(node)) for node in G.nodes()},
+                "originalColors": [
+                    color_map.get(G.nodes[node].get("type", "unknown"), "#CCCCCC")
                     for node in G.nodes()
-                ],
-                "edges": [
-                    {
-                        "source": edge[0],
-                        "target": edge[1],
-                        "relation": G.edges[edge].get("relation", "related"),
-                    }
-                    for edge in G.edges()
                 ],
                 "positions": {
-                    node: [
-                        float(pos[node][0]),
-                        float(pos[node][1]),
-                    ]  # Convert to float list
+                    node: [float(pos[node][0]), float(pos[node][1])]
                     for node in G.nodes()
+                },
+                # Add node types separately for React component
+                "nodeTypes": {
+                    node: G.nodes[node].get("type", "unknown") for node in G.nodes()
                 },
             }
         else:
-            graph_data = {"nodes": [], "edges": [], "positions": {}}
+            graph_data = {
+                "nodes": [],
+                "edges": [],
+                "adjacency": {},
+                "originalColors": [],
+                "positions": {},
+                "nodeTypes": {},
+            }
 
         return jsonify({"entities": entities, "graph": graph_data})
 

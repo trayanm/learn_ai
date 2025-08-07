@@ -40,11 +40,17 @@ const EntityGraph = ({ graphData, visibleNodes }) => {
       return;
     }
 
-    const { nodes, edges, positions } = graphData;
+    // Normalize nodes to be simple strings
+    const nodes = graphData.nodes.map(node => 
+      typeof node === 'string' ? node : node.id || node
+    );
     
-    console.log('Nodes:', nodes);
+    const { edges, positions, nodeTypes } = graphData;
+    
+    console.log('Normalized Nodes:', nodes);
     console.log('Edges:', edges);
     console.log('Positions:', positions);
+    console.log('Node Types:', nodeTypes);
 
     // Create edge traces
     const edgeX = [];
@@ -117,12 +123,10 @@ const EntityGraph = ({ graphData, visibleNodes }) => {
         nodeY.push(y);
         nodeText.push(node);
 
-        // Determine node type and color - improved detection
+        // Get node type from nodeTypes data
         let nodeType = 'unknown';
-        
-        // Check if we have node type information in the graph data
-        if (graphData.nodeTypes && graphData.nodeTypes[node]) {
-          nodeType = graphData.nodeTypes[node];
+        if (nodeTypes && nodeTypes[node]) {
+          nodeType = nodeTypes[node].toUpperCase(); // Convert to uppercase for colorMap
         } else {
           // Fallback to simple string matching
           const nodeLower = node.toLowerCase();
@@ -135,6 +139,8 @@ const EntityGraph = ({ graphData, visibleNodes }) => {
           }
         }
 
+        console.log(`Node: ${node}, Type: ${nodeType}, Color: ${colorMap[nodeType] || '#CCCCCC'}`); // Debug logging
+
         nodeColors.push(colorMap[nodeType] || '#CCCCCC');
 
         // Add node info
@@ -144,8 +150,13 @@ const EntityGraph = ({ graphData, visibleNodes }) => {
           : 'No connections';
         
         nodeInfo.push(`<b>${node}</b><br>Type: <i>${nodeType}</i><br>${connectionInfo}`);
+      } else {
+        console.warn(`No position found for node: ${node}`); // Debug logging
       }
     });
+
+    console.log('Node positions:', nodeX.length, 'nodes positioned');
+    console.log('Node colors:', nodeColors);
 
     const nodeTrace = {
       x: nodeX,
@@ -166,8 +177,13 @@ const EntityGraph = ({ graphData, visibleNodes }) => {
       type: 'scatter'
     };
 
+    console.log('Final node trace:', nodeTrace);
+
     setPlotData([edgeTrace, edgeHoverTrace, nodeTrace]);
     setOriginalColors(nodeColors);
+    
+    // Store normalized nodes for later use
+    graphData.normalizedNodes = nodes;
   }, [graphData]);
 
   // Update visibility when visibleNodes changes
@@ -177,12 +193,17 @@ const EntityGraph = ({ graphData, visibleNodes }) => {
     const updatedPlotData = [...plotData];
     const nodeTrace = updatedPlotData[2]; // Node trace is at index 2
 
+    // Use normalized nodes if available
+    const nodes = graphData.normalizedNodes || graphData.nodes.map(node => 
+      typeof node === 'string' ? node : node.id || node
+    );
+
     // Update node colors and text based on visibility
-    const nodeColors = graphData.nodes.map((node, index) => {
+    const nodeColors = nodes.map((node, index) => {
       return visibleNodes.includes(node) ? originalColors[index] : 'rgba(0,0,0,0)';
     });
 
-    const nodeTexts = graphData.nodes.map(node => {
+    const nodeTexts = nodes.map(node => {
       return visibleNodes.includes(node) ? node : '';
     });
 
