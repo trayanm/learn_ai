@@ -94,6 +94,7 @@ multimethod==1.12
 multiprocess==0.70.16
 murmurhash==1.0.13
 mypy_extensions==1.1.0
+narwhals==2.0.1
 nest-asyncio==1.6.0
 networkx==3.5
 numba==0.61.0
@@ -109,6 +110,7 @@ patsy==1.0.1
 phik==0.12.5
 pillow==11.3.0
 platformdirs==4.3.8
+plotly==6.2.0
 preshed==3.0.10
 prompt_toolkit==3.0.51
 propcache==0.3.2
@@ -133,6 +135,7 @@ PyWavelets==1.8.0
 pywin32==311
 PyYAML==6.0.2
 pyzmq==27.0.0
+rdflib==7.1.4
 regex==2025.7.34
 requests==2.32.4
 requests-toolbelt==1.0.0

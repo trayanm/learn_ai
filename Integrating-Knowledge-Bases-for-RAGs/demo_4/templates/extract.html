@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entity Extraction and Graph Visualization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 1400px;
+            margin: auto;
+            background: #2d2d2d;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            border: 1px solid #404040;
+        }
+        .graph-section {
+            background: #333333;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #555;
+            margin-bottom: 20px;
+            min-height: 600px;
+        }
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 300px;  /* Added third column for node controls */
+            gap: 20px;
+        }
+        .input-section {
+            background: #333333;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #555;
+        }
+        .entities-section {
+            background: #333333;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #555;
+        }
+        .node-controls {
+            background: #333333;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #555;
+        }
+        h1 {
+            text-align: center;
+            color: #ffffff;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #ffffff;
+            margin-top: 0;
+        }
+        h3 {
+            color: #ffffff;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background-color: #404040;
+            color: #e0e0e0;
+            box-sizing: border-box;
+            min-height: 200px;
+            resize: vertical;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #007BFF;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+        }
+        textarea::placeholder {
+            color: #aaa;
+        }
+        input[type="submit"] {
+            width: 100%;
+            padding: 12px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+        .graph-container {
+            background: #404040;
+            border-radius: 4px;
+            border: 1px solid #666;
+            overflow: hidden;
+            min-height: 550px;
+        }
+        .graph-container .plotly-graph-div {
+            height: 550px !important;
+        }
+        .entity-type {
+            display: block;
+            margin: 10px 0;
+        }
+        .entity-type strong {
+            color: #007BFF;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .entity-list {
+            margin-left: 0;
+        }
+        .entity-item {
+            background: #404040;
+            padding: 6px 12px;
+            margin: 4px;
+            border-radius: 3px;
+            display: inline-block;
+            border: 1px solid #666;
+            font-size: 14px;
+        }
+        .navigation {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .navigation a {
+            color: #007BFF;
+            text-decoration: none;
+            margin: 0 10px;
+            padding: 8px 16px;
+            border: 1px solid #007BFF;
+            border-radius: 4px;
+        }
+        .navigation a:hover {
+            background-color: #007BFF;
+            color: white;
+        }
+        .empty-state {
+            color: #aaa;
+            text-align: center;
+            padding: 40px 20px;
+            font-style: italic;
+        }
+        .empty-entities {
+            color: #aaa;
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+        }
+        
+        /* Node control styles */
+        .control-group {
+            margin-bottom: 20px;
+        }
+        .control-group h4 {
+            color: #007BFF;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            padding: 4px;
+            border-radius: 3px;
+            transition: background-color 0.2s;
+        }
+        .checkbox-item:hover {
+            background-color: #404040;
+        }
+        .checkbox-item input[type="checkbox"] {
+            margin-right: 8px;
+            transform: scale(1.1);
+        }
+        .checkbox-item label {
+            color: #e0e0e0;
+            font-size: 13px;
+            cursor: pointer;
+            flex: 1;
+        }
+        .node-color-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 8px;
+            border: 1px solid #666;
+        }
+        .control-buttons {
+            margin-top: 15px;
+        }
+        .control-btn {
+            padding: 8px 12px;
+            margin: 2px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            width: calc(50% - 4px);
+        }
+        .control-btn:hover {
+            background-color: #0056b3;
+        }
+        .control-btn.secondary {
+            background-color: #666;
+        }
+        .control-btn.secondary:hover {
+            background-color: #777;
+        }
+        
+        @media (max-width: 1200px) {
+            .bottom-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .node-controls {
+                grid-column: span 2;
+                max-height: 300px;
+                overflow-y: auto;
+            }
+        }
+        
+        @media (max-width: 968px) {
+            .bottom-grid {
+                grid-template-columns: 1fr;
+            }
+            .graph-section {
+                min-height: 450px;
+            }
+            .graph-container {
+                min-height: 400px;
+            }
+            .graph-container .plotly-graph-div {
+                height: 400px !important;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .graph-section {
+                min-height: 350px;
+            }
+            .graph-container {
+                min-height: 300px;
+            }
+            .graph-container .plotly-graph-div {
+                height: 300px !important;
+            }
+            textarea {
+                min-height: 150px;
+            }
+        }
+    </style>
+
+    <script src="{{ url_for('static', filename='js/graph_interactions.js') }}"></script>
+</head>
+<body>
+
+<div class="container">
+    <div class="navigation">
+        <a href="/">← Back to RAG System</a>
+    </div>
+    
+    <h1>Entity Extraction and Graph Visualization</h1>
+    
+    <!-- Graph Section - Full Width at Top -->
+    <div class="graph-section">
+        <h2>Entity Graph</h2>
+        <div class="graph-container">
+            {% if graph_div %}
+                {{ graph_div|safe }}
+            {% else %}
+                <div class="empty-state">
+                    <h3>No Graph Generated Yet</h3>
+                    <p>Enter text below and click "Extract Entities" to see the interactive graph visualization</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Bottom Grid - Input, Entities, and Node Controls -->
+    <div class="bottom-grid">
+        <!-- Input Section - Left -->
+        <div class="input-section">
+            <h2>Input Text</h2>
+            <form method="POST">
+                <textarea name="text" placeholder="Enter text to extract entities and create graph...&#10;&#10;Example:&#10;Elon Musk founded SpaceX in 2002. The company is based in California and develops advanced rockets. Tesla was also founded by Elon Musk and produces electric vehicles.&#10;&#10;Bellamy is brother of Octavia. They both live in the space station.">{{ input_text }}</textarea>
+                <input type="submit" value="Extract Entities">
+            </form>
+        </div>
+        
+        <!-- Entities Section - Middle -->
+        <div class="entities-section">
+            <h2>Extracted Entities</h2>
+            {% if entities %}
+                <div class="entity-types">
+                    {% for entity_type, entity_list in entities.items() %}
+                        {% if entity_list %}
+                        <div class="entity-type">
+                            <strong>{{ entity_type }}:</strong>
+                            <div class="entity-list">
+                                {% for entity in entity_list %}
+                                    <span class="entity-item">{{ entity }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-entities">
+                    <p>No entities extracted yet.</p>
+                    <p>Enter text on the left and click "Extract Entities" to see the results here.</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Node Controls Section - Right -->
+        <div class="node-controls">
+            <h2>Graph Controls</h2>
+            {% if entities %}
+            <div id="nodeControlsContainer">
+                <!-- Entity Type Controls -->
+                <div class="control-group">
+                    <h4>ENTITY TYPES</h4>
+                    {% for entity_type, entity_list in entities.items() %}
+                        {% if entity_list %}
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="type_{{ entity_type }}" checked data-type="entity-type" data-value="{{ entity_type }}">
+                            <label for="type_{{ entity_type }}">{{ entity_type }} ({{ entity_list|length }})</label>
+                            <div class="node-color-indicator" style="background-color: 
+                                {% if entity_type == 'PERSON' %}#FF6B6B
+                                {% elif entity_type == 'ORG' %}#4ECDC4  
+                                {% elif entity_type == 'GPE' %}#45B7D1
+                                {% elif entity_type == 'PRODUCT' %}#96CEB4
+                                {% else %}#CCCCCC{% endif %};"></div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                
+                <!-- Individual Nodes Controls -->
+                <div class="control-group">
+                    <h4>INDIVIDUAL NODES</h4>
+                    <div style="max-height: 200px; overflow-y: auto;">
+                        {% for entity_type, entity_list in entities.items() %}
+                            {% if entity_list %}
+                                {% for entity in entity_list %}
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="node_{{ entity|replace(' ', '_') }}" checked data-type="individual-node" data-value="{{ entity }}" data-entity-type="{{ entity_type }}">
+                                    <label for="node_{{ entity|replace(' ', '_') }}">{{ entity }}</label>
+                                    <div class="node-color-indicator" style="background-color: 
+                                        {% if entity_type == 'PERSON' %}#FF6B6B
+                                        {% elif entity_type == 'ORG' %}#4ECDC4  
+                                        {% elif entity_type == 'GPE' %}#45B7D1
+                                        {% elif entity_type == 'PRODUCT' %}#96CEB4
+                                        {% else %}#CCCCCC{% endif %};"></div>
+                                </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Control Buttons -->
+                <div class="control-buttons">
+                    <button class="control-btn" onclick="showAllNodes()">Show All</button>
+                    <button class="control-btn secondary" onclick="hideAllNodes()">Hide All</button>
+                    <button class="control-btn" onclick="showOnlyConnected()">Connected Only</button>
+                    <button class="control-btn secondary" onclick="resetGraph()">Reset View</button>
+                </div>
+            </div>
+            {% else %}
+            <div class="empty-entities">
+                <p>No controls available yet.</p>
+                <p>Extract entities to see graph controls here.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Node Controls -->
+<script>
+// Node control functionality
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Page loaded, setting up node controls...');
+    
+    // Initialize graph interactions if we have graph data
+    {% if graph_data and graph_data.nodes %}
+    const graphData = {{ graph_data|tojson }};
+    console.log('Graph data received:', graphData);
+    
+    // Check if we actually have nodes
+    if (graphData.nodes && graphData.nodes.length > 0) {
+        initializeGraphInteractions(graphData);
+    } else {
+        console.log('No nodes in graph data, skipping graph initialization');
+    }
+    {% else %}
+    console.log('No graph data available');
+    {% endif %}
+    
+    // Add event listeners to checkboxes
+    const checkboxes = document.querySelectorAll('#nodeControlsContainer input[type="checkbox"]');
+    console.log('Found checkboxes:', checkboxes.length);
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', handleNodeVisibilityChange);
+    });
+});
+
+function handleNodeVisibilityChange(event) {
+    const checkbox = event.target;
+    const type = checkbox.dataset.type;
+    const value = checkbox.dataset.value;
+    const isChecked = checkbox.checked;
+    
+    console.log(`Checkbox changed: ${type} - ${value} - ${isChecked}`);
+    
+    if (type === 'entity-type') {
+        // Handle entity type checkbox
+        toggleEntityType(value, isChecked);
+        
+        // Update individual checkboxes for this type
+        const individualCheckboxes = document.querySelectorAll(`input[data-entity-type="${value}"]`);
+        console.log(`Found ${individualCheckboxes.length} individual checkboxes for type ${value}`);
+        
+        individualCheckboxes.forEach(cb => {
+            cb.checked = isChecked;
+        });
+    } else if (type === 'individual-node') {
+        // Handle individual node checkbox
+        toggleIndividualNode(value, isChecked);
+        
+        // Update entity type checkbox if needed
+        const entityType = checkbox.dataset.entityType;
+        const allTypeNodes = document.querySelectorAll(`input[data-entity-type="${entityType}"]`);
+        const checkedTypeNodes = document.querySelectorAll(`input[data-entity-type="${entityType}"]:checked`);
+        const typeCheckbox = document.querySelector(`input[data-value="${entityType}"][data-type="entity-type"]`);
+        
+        if (typeCheckbox) {
+            typeCheckbox.checked = checkedTypeNodes.length > 0;
+        }
+    }
+    
+    // Update the graph
+    updateGraphVisibility();
+}
+
+function toggleEntityType(entityType, show) {
+    console.log(`${show ? 'Show' : 'Hide'} entity type: ${entityType}`);
+}
+
+function toggleIndividualNode(nodeName, show) {
+    console.log(`${show ? 'Show' : 'Hide'} node: ${nodeName}`);
+}
+
+function updateGraphVisibility() {
+    console.log('Updating graph visibility...');
+    
+    // Get all visible nodes
+    const visibleNodes = [];
+    const individualCheckboxes = document.querySelectorAll('input[data-type="individual-node"]:checked');
+    
+    individualCheckboxes.forEach(cb => {
+        visibleNodes.push(cb.dataset.value);
+    });
+    
+    console.log('Visible nodes:', visibleNodes);
+    
+    // Call the graph update function
+    if (window.updateGraphNodeVisibility) {
+        console.log('Calling updateGraphNodeVisibility...');
+        window.updateGraphNodeVisibility(visibleNodes);
+    } else {
+        console.warn('updateGraphNodeVisibility function not found - graph might not be loaded yet');
+        
+        // Try again after a delay
+        setTimeout(() => {
+            if (window.updateGraphNodeVisibility) {
+                console.log('Retrying updateGraphNodeVisibility...');
+                window.updateGraphNodeVisibility(visibleNodes);
+            } else {
+                console.error('updateGraphNodeVisibility still not available');
+            }
+        }, 1000);
+    }
+}
+
+function showAllNodes() {
+    console.log('Show all nodes clicked');
+    const checkboxes = document.querySelectorAll('#nodeControlsContainer input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+        cb.checked = true;
+    });
+    updateGraphVisibility();
+}
+
+function hideAllNodes() {
+    console.log('Hide all nodes clicked');
+    const checkboxes = document.querySelectorAll('#nodeControlsContainer input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+        cb.checked = false;
+    });
+    updateGraphVisibility();
+}
+
+function showOnlyConnected() {
+    console.log('Show only connected clicked');
+    if (window.showOnlyConnectedNodes) {
+        window.showOnlyConnectedNodes();
+    } else {
+        console.warn('showOnlyConnectedNodes function not found');
+    }
+}
+
+function resetGraph() {
+    console.log('Reset graph clicked');
+    showAllNodes();
+    if (window.resetGraphHighlight) {
+        window.resetGraphHighlight();
+    }
+}
+</script>
+
+</body>
+</html>
